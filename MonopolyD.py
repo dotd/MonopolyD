@@ -1,4 +1,4 @@
-import numpy as np 
+import numpy as np  
 
 rnd = np.random.RandomState(1)
 
