@@ -30,6 +30,7 @@ class MonopolyD():
         self.action_size = len(MonopolyD.actions)
         self.reward = np.zeros(shape=(self.num_players))
         self.broke_players = set()
+        self.feature_map = {}
 
     def step(self):
         strs = self.step_pre()
@@ -44,7 +45,8 @@ class MonopolyD():
         strs = []
 
         strs.append("---------------")
-        strs.append("Board")
+        strs.append("Pre section")
+        strs.append("board:")
         strs.append(self.show_board())
         strs.append("Before:\n" + self.__str__())
 
@@ -55,16 +57,17 @@ class MonopolyD():
         self.player_square = self.squares[self.position[self.cur_player]]
         # get the valid actions for this player and this square
         self.valid_actions = self.get_valid_actions(self.cur_player, self.player_square)
-        strs.append(">> valid_actions=" + self.show_actions(self.valid_actions))
+        strs.append("valid_actions=" + self.show_actions(self.valid_actions))
         return strs
 
     def step_post(self, action_idx):
         strs = []
+        strs.append("Post section")
         action = self.valid_actions[action_idx]
-        strs.append(">> Chosen action: " + str(action))
+        strs.append("Chosen action: " + str(action))
         self.apply_pays(self.cur_player, self.player_square, action)
 
-        strs.append(">> After:\n" + self.__str__())
+        strs.append("After:\n" + self.__str__())
         self.update_broke_players()
         self.next_player()
         return strs
@@ -141,24 +144,26 @@ class MonopolyD():
 
     def update_broke_players(self):
         for p in range(self.num_players):
-            if self.money[p] < 0:
+            if self.money[p] < 0 and p not in self.broke_players:
                 print("player {} is broke!!!".format(p))
                 self.broke_players.add(p)
 
-    def get_state_vector(self, player_idx):
-        d = {}
+    def get_state_info(self, player_idx):
+        # dictionary with the state variables
+        player_info_dict = {}
+
         # Locations
         for player in range(self.num_players):
             # Locations
-            #index 0 is the current player_idx. The rest are the rest of the players
-            player_num = (player_idx + player)%self.num_players
+            #index 0 is the current player_idx. The rest are the rest of the players in modulo order
+            player_num = (player_idx + player) % self.num_players
             key = "pos{}".format(player_num)
             value = self.position[player_num]
-            d[key] = value
+            player_info_dict[key] = value
             # Money for each player
             key = "money{}".format(player_num)
             value = self.money[player_num]
-            d[key] = value
+            player_info_dict[key] = value
 
         # Ownerships - common to all squares and players.
         # (1) If a square is owned by the player_idx, then we put there the values of the asset with a positive sign.
@@ -166,12 +171,25 @@ class MonopolyD():
         # (3) Otherwise, we put 0.
         for square_idx, square in enumerate(self.squares):
             key = "sq{}".format(square_idx)
-            value = None
+            value = 0
             if square.type == "asset":
                 if square.owner==player_idx:
                     value = square.price_ladder[square.ownership_level]
                 elif square.owner!=None and square.owner != player_idx:
                     value = -square.price_ladder[square.ownership_level]
-            d[key] = value
+            player_info_dict[key] = value
 
-        return d
+        return player_info_dict
+
+    def get_state_vector(self, player_info_dict):
+        for key, value in player_info_dict.items():
+            if key not in self.feature_map:
+                self.feature_map[key] = len(self.feature_map)
+
+        vec = np.zeros(shape=(len(self.feature_map)))
+        for key, value in player_info_dict.items():
+            vec[self.feature_map[key]] = value
+        return value
+
+
+
