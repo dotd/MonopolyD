@@ -5,14 +5,14 @@ class AgentBase():
     Here we define the interface of the agent
     '''
 
-    def __init__(self):
+    def __init__(self, random):
         '''
         This is a setup without state space and action. Sometimes we need to wait for the environment
         in order to understand what is the state space
         '''
         pass
 
-    def init_agent(self, dim_state, dim_action):
+    def init_agent(self, dim_state, dim_action, **kwargs):
         '''
         Here we explicitly define the state space and action space
         '''

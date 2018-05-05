@@ -1,13 +1,15 @@
 import torch
+import torch.nn.functional as F
 from torch.autograd import Variable
+
 import random
 import math
 from collections import namedtuple
-import torch.nn.functional as F
 
-dtype = torch.float
-device = torch.device("cpu")
 import agents.AgentBase
+
+dtype = torch.FloatTensor
+#device = torch.device("cpu")
 
 #use_cuda = torch.cuda.is_available()
 use_cuda = False
@@ -61,15 +63,15 @@ EPS_START = 0.9
 EPS_END = 0.05
 EPS_DECAY = 200
 
-class AgentLogistic(agents.AgentBase):
-    def __init__(self, random):
+class AgentLogistic(agents.AgentBase.AgentBase):
+    def __init__(self, rnd):
         self.random = random
         self.steps_done = 0
         self.memory = ReplayMemory(10000)
 
-    def init_agent(self, dim_state, rep_size, dim_action):
+    def init_agent(self, dim_state, dim_action, **kwargs):
         self.dim_state = dim_state
-        self.rep_size = rep_size
+        self.rep_size = kwargs.get("rep_size")
         self.dim_action = dim_action
         self.model = SimpleDoubleAction(self.dim_state, self.rep_size, self.dim_action)
         self.optimizer = torch.optim.RMSprop(self.model.parameters())
@@ -83,16 +85,18 @@ class AgentLogistic(agents.AgentBase):
         action = Q.max(1)[1].view(1, 1)
         return action
 
-    def choose_action(self, state):
+    def choose_action(self, state, valid_actions = None):
         sample = random.random()
         eps_threshold = EPS_END + (EPS_START - EPS_END) * \
                                   math.exp(-1. * self.steps_done / EPS_DECAY)
         self.steps_done += 1
         if sample > eps_threshold:
-            action = self.predict(state)
+            action_idx_tensor = self.predict(state)
         else:
-            action = LongTensor([[random.randrange(2)]])
-        return action
+            action_idx_tensor = LongTensor([[random.randrange(2)]])
+
+        action_idx = action_idx_tensor[0][0]
+        return action_idx
 
     def optimize_model(self):
         global last_sync

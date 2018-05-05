@@ -1,5 +1,6 @@
 import numpy as np
 from Square import Square
+from collections import OrderedDict
 
 global rnd
 BROKE_PLAYERS = "BROKE_PLAYERS"
@@ -21,11 +22,11 @@ class MonopolyD():
         self.squares = []
         self.rnd = kwargs.get("rnd")
         for i in range(self.num_squares):
-            self.squares.append(Square(rnd=self.rnd))
+            self.squares.append(Square(id=i, rnd=self.rnd))
         self.rounds = 100
         self.turn = 0
 
-        state_vec = self.get_state_info(0)
+        state_vec = self.get_state_info_as_dict(0)
         self.state_size = len(state_vec)
         self.action_size = len(MonopolyD.actions)
         self.reward = np.zeros(shape=(self.num_players))
@@ -63,9 +64,13 @@ class MonopolyD():
     def step_post(self, action_idx):
         strs = []
         strs.append("Post section")
-        action = self.valid_actions[action_idx]
-        strs.append("Chosen action: " + str(action))
-        self.apply_pays(self.cur_player, self.player_square, action)
+        #action = self.valid_actions[action_idx]
+        strs.append("Chosen action: " + str(action_idx))
+        # Now, if the agent chose forbidden action for him, we override his choice with "do_nothing"
+        if len(self.valid_actions)==1:
+            action_idx=0
+
+        self.apply_pays(self.cur_player, self.player_square, action_idx)
 
         strs.append("After:\n" + self.__str__())
         self.update_broke_players()
@@ -107,7 +112,7 @@ class MonopolyD():
 
     def show_board(self, lines_seperator="\n"):
         s = []
-        s.append(lines_seperator.join(x.tostr() for x in self.squares))
+        s.append(lines_seperator.join(x.__str__() for x in self.squares))
         return lines_seperator.join(s)
 
     def show_actions(self, actions, separator="; "):
@@ -116,18 +121,22 @@ class MonopolyD():
             s.append("{}->{} ".format(action, cost))
         return separator.join(s)
 
-    def get_valid_actions(self, player, square):
+    def get_valid_actions(self, player_idx, square):
         if square.type == "asset" and square.owner == None:
+            '''The square is free'''
             actions = [("nothing", 0), ("buy", square.price_ladder[0])]
-        elif square.type == "asset" and square.owner == player and square.ownership_level < len(
+        elif square.type == "asset" and square.owner == player_idx and square.ownership_level < len(
                 square.price_ladder) - 1:
+            ''' The square belongs to the player player_idx and it can buy it.'''
             actions = [("nothing", 0), ("buy", square.price_ladder[square.ownership_level + 1])]
         else:
+            ''' No action can be done.'''
             actions = [("nothing", 0)]
         return actions
 
-    def apply_pays(self, player, square, action):
-        if (square.type == "asset") and (square.owner == None) and action[0] == "buy" and self.money[player] >= action[1]:
+    def apply_pays(self, player, square, action_idx):
+        action_vec = self.valid_actions[action_idx]
+        if (square.type == "asset") and (square.owner == None) and action_vec[0] == "buy" and self.money[player] >= action_vec[1]:
             square.owner = player
             diff = -square.price_ladder[square.ownership_level]
             self.money[player] += diff
@@ -148,7 +157,7 @@ class MonopolyD():
                 print("player {} is broke!!!".format(p))
                 self.broke_players.add(p)
 
-    def get_state_info(self, player_idx):
+    def get_state_info_as_dict(self, player_idx):
         # dictionary with the state variables
         player_info_dict = {}
 
@@ -181,9 +190,16 @@ class MonopolyD():
 
         return player_info_dict
 
+    def get_state_as_vec(self, player_idx):
+        dict = OrderedDict(sorted(self.get_state_info_as_dict(player_idx).items()))
+        vec = [0 for x in range(len(dict))]
+        for idx, key_value in enumerate(dict.items()):
+            vec[idx] = key_value[1]
+        return {"dict":dict, "vec":vec}
+
     def get_state_dim(self):
         # get the state dictionary
-        state_dict = self.get_state_info(0)
+        state_dict = self.get_state_info_as_dict(0)
         return len(state_dict)
 
     def get_state_vector(self, player_info_dict):

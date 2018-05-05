@@ -8,7 +8,7 @@ class AgentRandom:
         self.num_states = num_states
         self.num_actions = num_actions
 
-    def choose_action(self, state, valid_actions):
-        action = self.rnd.choice(len(valid_actions))
+    def choose_action(self, state, valid_actions=None):
+        action = self.rnd.choice(self.num_actions)
         return action
 

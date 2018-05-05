@@ -7,7 +7,8 @@ global rnd
 class Square():
     typs = ['money_change', 'asset']
 
-    def __init__(self, rnd):
+    def __init__(self, id, rnd):
+        self.id = id
         self.rnd = rnd
         self.type = Square.typs[rnd.randint(len(Square.typs))]
         self.owner = None
@@ -17,8 +18,8 @@ class Square():
         elif self.type == "money_change":
             self.money_change = self.rnd.randint(-100, 100)
 
-    def tostr(self):
-        sb = "type={} ".format(self.type)
+    def __str__(self):
+        sb = "type={}, id={} ".format(self.type, self.id)
         if self.type == "asset":
             sb += "owner={} ".format(self.owner)
             sb += ",".join(str(x) for x in self.price_ladder)
