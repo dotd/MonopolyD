@@ -25,7 +25,7 @@ class MonopolyD():
         self.rounds = 100
         self.turn = 0
 
-        state_vec = self.get_state_vector(0)
+        state_vec = self.get_state_info(0)
         self.state_size = len(state_vec)
         self.action_size = len(MonopolyD.actions)
         self.reward = np.zeros(shape=(self.num_players))
@@ -152,10 +152,10 @@ class MonopolyD():
         # dictionary with the state variables
         player_info_dict = {}
 
-        # Locations
+        # going over all the players
         for player in range(self.num_players):
             # Locations
-            #index 0 is the current player_idx. The rest are the rest of the players in modulo order
+            # index 0 is the current player_idx. The rest are the rest of the players in modulo order
             player_num = (player_idx + player) % self.num_players
             key = "pos{}".format(player_num)
             value = self.position[player_num]
@@ -180,6 +180,11 @@ class MonopolyD():
             player_info_dict[key] = value
 
         return player_info_dict
+
+    def get_state_dim(self):
+        # get the state dictionary
+        state_dict = self.get_state_info(0)
+        return len(state_dict)
 
     def get_state_vector(self, player_info_dict):
         for key, value in player_info_dict.items():
